@@ -23,19 +23,16 @@ end
 # ╔═╡ 581f09f4-cc21-48d2-9d58-d67dc22a915d
 begin
 	# read in the data
-	Dat = CSV.File("/Users/aran/Documents/GitHub/PosVol/D++.txt",delim = '\t') |> DataFrame;
+	Dat = CSV.File("D++.txt",delim = '\t') |> DataFrame;
 	rename!(Dat,[:Depth,:Pitch,:Roll,:Speed,:Heading]);
-	Dat = Dat[1:(sum(ismissing.(Dat.Depth) .== false) - 1),:]
+	# Dat = Dat[1:(sum(ismissing.(Dat.Depth) .== false) - 1),:]
 end
-
-# ╔═╡ 03f9c08e-b31c-4d24-b45e-ddf400294221
-nrow(Dat)
 
 # ╔═╡ ff14e240-03cb-42b4-86e4-d08bec5f1606
 nrow(Dat)/16
 
 # ╔═╡ 98c0d7ef-39df-4f7b-b40b-3a82a78df553
-sum(ismissing.(Dat.Depth) .== false) - 1)
+sum(ismissing.(Dat.Depth) .== false) - 1
 
 # ╔═╡ 92032536-4310-4d11-8923-7c2947296c79
 begin
@@ -949,7 +946,6 @@ version = "0.9.1+5"
 # ╠═f7ca7fbc-0fac-11ec-1b01-77c4fb485ee6
 # ╟─4383f1a5-eff1-425c-ae9a-e377ca0cabc8
 # ╠═581f09f4-cc21-48d2-9d58-d67dc22a915d
-# ╠═03f9c08e-b31c-4d24-b45e-ddf400294221
 # ╠═ff14e240-03cb-42b4-86e4-d08bec5f1606
 # ╠═98c0d7ef-39df-4f7b-b40b-3a82a78df553
 # ╠═92032536-4310-4d11-8923-7c2947296c79
