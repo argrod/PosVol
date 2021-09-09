@@ -6,13 +6,16 @@ using InteractiveUtils
 
 # ╔═╡ f7ca7fbc-0fac-11ec-1b01-77c4fb485ee6
 begin
-	using PyPlot
+	# using Makie
+	# using CairoMakie
+	# using GLMakie
 	using CSV
 	using DataFrames
-	# using Plots
-	# using PyPlot
-	using PyCall
-	# @pyimport matplotlib.animation as anim
+	# using WebIO
+	using Plots
+	using PyPlot
+	# using PyCall
+	#@pyimport matplotlib.animation as anim
 end
 
 # ╔═╡ 4383f1a5-eff1-425c-ae9a-e377ca0cabc8
@@ -44,32 +47,18 @@ begin
 end
 
 # ╔═╡ 92032536-4310-4d11-8923-7c2947296c79
-begin
-	pygui(true)
-	fig = [];
-for b in 1:nrow(dat)
-		fig[b] = figure()
-		ax = fig[:gca](projection="3d")
-		ax[:quiver](0,0,0, dat.Pitch[b],dat.Roll[b],dat.Head[b])
-		xlim([minimum(dat.Pitch) - 5, maximum(dat.Pitch) + 5])
-		ylim([minimum(dat.Roll) - 5, maximum(dat.Roll) + 5])
-		zlim([minimum(dat.Head) - 5, maximum(dat.Head) + 5])
-	end
-end
-
-# ╔═╡ 9849b047-2eba-4740-a462-d52337b24700
-begin
-	plot([0,0,0],[dat.Pitch[1],dat.Roll[1],dat.Head[1]])
-end
-
-# ╔═╡ dd2de897-4bdd-4794-b295-80b5ade34be1
-
-
-# ╔═╡ 1a1324dd-5674-4608-867e-a4ae2d2d3c77
-fig
-
-# ╔═╡ 996458de-f0fa-49bd-865e-7017d91c7197
-
+# begin
+# 	pygui(true)
+# 	fig = [];
+# for b in 1:nrow(dat)
+# 		fig[b] = figure()
+# 		ax = fig[:gca](projection="3d")
+# 		ax[:quiver](0,0,0, dat.Pitch[b],dat.Roll[b],dat.Head[b])
+# 		xlim([minimum(dat.Pitch) - 5, maximum(dat.Pitch) + 5])
+# 		ylim([minimum(dat.Roll) - 5, maximum(dat.Roll) + 5])
+# 		zlim([minimum(dat.Head) - 5, maximum(dat.Head) + 5])
+# 	end
+# end
 
 # ╔═╡ b0015647-4a60-4689-95bd-271050c2ddee
 # begin
@@ -97,19 +86,115 @@ begin
 end
 
 # ╔═╡ e9419743-d6a2-418f-9012-813398aebbbd
-begin
-	anim = @animate for b ∈ 1:nrow(Dat)
-		plot([0,0,0],[Dat.Pitch[b],Dat.Heading[b],Dat.Roll[b]],arrow = true)
-	end
-	gif(anim, "anim_fps15.gif", fps = 15)
-end
+# begin
+# 	anim = @animate for b ∈ 1:nrow(Dat)
+# 		plot([0,0,0],[Dat.Pitch[b],Dat.Heading[b],Dat.Roll[b]],arrow = true)
+# 	end
+# 	gif(anim, "anim_fps15.gif", fps = 15)
+# end
 
 # ╔═╡ a43f1785-18fd-4418-a494-7d368d1265ca
+# begin
+# 	@gif for b ∈ 1:nrow(Dat)
+# 		plot([0,0,0],[Dat.Pitch[b],Dat.Heading[b],Dat.Roll[b]],arrow = true)
+# 	end
+# end
+
+# ╔═╡ be58676d-ad76-4fe5-aef6-67badf767347
+# begin
+# 	plot(
+# 		cone(x=[1], y=[1], z=[1], u=[1], v=[1], w=[0]),
+# 		Layout(scene_camera_eye=attr(x=-0.76, y=1.8, z=0.92)
+# 	))
+# end
+
+# ╔═╡ ecf57eb9-dc15-47e7-a683-20d37f33d5d0
 begin
-	@gif for b ∈ 1:nrow(Dat)
-		plot([0,0,0],[Dat.Pitch[b],Dat.Heading[b],Dat.Roll[b]],arrow = true)
+	function maxEchD(ci)
+		1500*(ci/2)
+	end
+	function ConVol(b,d)
+		(b*d)/3
+	end
+	function ellAr(x,y)
+		pi*x*y
 	end
 end
+
+# ╔═╡ 9559961f-8348-44db-ac46-203bca8ad847
+begin
+	d = maxEchD(0.05)
+	θ = 5*(180/pi)
+	rad = d*tan(θ)
+	V = ConVol(pi*rad^2,d)
+	md"""
+	# Calculating the cone volume for echolocation
+	
+	Assuming speed of sound ($s_s$) to be 1500 m/s and with and inter-click interval $ci$, the maximum distance sound can reach and return to the whale ($d$) can be determined by
+	
+	$d = s_s \times \frac{ci}{2}$
+	
+	This can then be converted into a cone via the equation
+	
+	$V_c = \frac{b_a \times d}{3}$
+	
+	where $b_a$ is the base area. This base area is dependent on the angle of spread of the echolocation signal. Assuming the sound originates from a single point, the sound is assumed to spread via angle \theta in all directions (adjustments can be made if this specification needs changing). The radius of the resulting circle at the max distance $d$ is equal to 
+	
+	$d*tan(\theta)$
+	
+	This base area is assumed to be a circle, but with inclusion of different angles, could form an ellipse with area $\pi a b$, where $a$ and $b$ are the major and minor radii, respectively.
+	
+	So, given a typical sperm whale $ci$ of $0.05s$ and an angular spread of $5$°, the maximum distance would be $(d), giving a cone volume of $(V) meters$$^2$$.
+	"""
+end
+
+# ╔═╡ 84b54f02-936a-4454-a7b9-60607a9b9bec
+begin
+	md"""
+	Describing it in vector space, the original point would be at $[0, 0, 0]$.
+	
+	Calculating each point further one would require calculating each individual point.
+	"""
+end
+
+# ╔═╡ ce5766fe-cf1f-4507-a5a1-2e090e5b39ff
+# begin
+# n = 100
+# ts = range(0, stop = 8π, length = n)
+# x = ts .* map(cos, ts)
+# y = (0.1ts) .* map(sin, ts)
+# z = 1:n
+# PyPlot.plot(x, y, z, zcolor = reverse(z), m = (10, 0.8, :blues, Plots.stroke(0)), leg = false, cbar = true, w = 5)
+# plot!(zeros(n), zeros(n), 1:n, w = 10)
+# end
+
+# ╔═╡ eb515fa9-9be9-4b8b-a944-b367bb310254
+begin
+	xs = range(0, stop = d, length = 10)
+	ys = xs * cos(θ)
+	zs = xs * sin(θ)
+	Plots.plot(xs, ys, zs, seriestype = :scatter)
+end
+
+# ╔═╡ 71435c12-8940-439d-9e60-d3626383d9cf
+
+
+# ╔═╡ bbbe9638-a824-478c-aa1e-e5fd43102f07
+
+
+# ╔═╡ 24338d39-0804-4c59-9758-d29af5db14e5
+# begin
+# 	lower = fill((0,0,0), 100)
+# 	upper = [(sin(x), cos(x), 1.0) for x in range(0,2pi, length=100)]
+# 	col = repeat([1:50;50:-1:1],outer=2)
+# 	band(lower, upper, color=col, axis=(type=Axis3,))
+# end
+
+# ╔═╡ 1eb4e4cb-5a14-4c25-b3ec-6dea5cd9ce21
+[(sin(x), cos(x), 1.0) for x in range(0,2pi, length=100)]
+
+# ╔═╡ b77f53aa-d7e9-4c40-a0cb-74140d7b37f3
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -117,11 +202,13 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 
 [compat]
 CSV = "~0.8.5"
 DataFrames = "~1.2.2"
 Plots = "~1.21.3"
+PyPlot = "~2.9.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -181,13 +268,23 @@ version = "0.12.8"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
-git-tree-sha1 = "727e463cfebd0c7b999bbf3e9e7e16f254b94193"
+git-tree-sha1 = "6071cb87be6a444ac75fdbf51b8e7273808ce62f"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "3.34.0"
+version = "3.35.0"
 
 [[CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
+
+[[CompilerSupportLibraries_jll]]
+deps = ["Artifacts", "Libdl"]
+uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
+
+[[Contour]]
+deps = ["StaticArrays"]
+git-tree-sha1 = "9f02045d934dc030edad45944ea80dbd1f0ebea7"
+uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
+version = "0.5.7"
 
 [[Contour]]
 deps = ["StaticArrays"]
@@ -631,6 +728,12 @@ git-tree-sha1 = "ad368663a5e20dbb8d6dc2fddeefe4dae0781ae8"
 uuid = "ea2cea3b-5b76-57ae-a6ef-0a8af62496e1"
 version = "5.15.3+0"
 
+[[Qt5Base_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
+git-tree-sha1 = "ad368663a5e20dbb8d6dc2fddeefe4dae0781ae8"
+uuid = "ea2cea3b-5b76-57ae-a6ef-0a8af62496e1"
+version = "5.15.3+0"
+
 [[REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
@@ -741,9 +844,9 @@ version = "1.0.1"
 
 [[Tables]]
 deps = ["DataAPI", "DataValueInterfaces", "IteratorInterfaceExtensions", "LinearAlgebra", "TableTraits", "Test"]
-git-tree-sha1 = "d0c690d37c73aeb5ca063056283fde5585a41710"
+git-tree-sha1 = "368d04a820fe069f9080ff1b432147a6203c3c89"
 uuid = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
-version = "1.5.0"
+version = "1.5.1"
 
 [[Tar]]
 deps = ["ArgTools", "SHA"]
@@ -764,6 +867,156 @@ uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [[Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
+
+[[Wayland_jll]]
+deps = ["Artifacts", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
+git-tree-sha1 = "3e61f0b86f90dacb0bc0e73a0c5a83f6a8636e23"
+uuid = "a2964d1f-97da-50d4-b82a-358c7fce9d89"
+version = "1.19.0+0"
+
+[[Wayland_protocols_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Wayland_jll"]
+git-tree-sha1 = "2839f1c1296940218e35df0bbb220f2a79686670"
+uuid = "2381bf8a-dfd0-557d-9999-79630e7b1b91"
+version = "1.18.0+4"
+
+[[XML2_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "Zlib_jll"]
+git-tree-sha1 = "1acf5bdf07aa0907e0a37d3718bb88d4b687b74a"
+uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
+version = "2.9.12+0"
+
+[[XSLT_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "Pkg", "XML2_jll", "Zlib_jll"]
+git-tree-sha1 = "91844873c4085240b95e795f692c4cec4d805f8a"
+uuid = "aed1982a-8fda-507f-9586-7b0439959a61"
+version = "1.1.34+0"
+
+[[Xorg_libX11_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
+git-tree-sha1 = "5be649d550f3f4b95308bf0183b82e2582876527"
+uuid = "4f6342f7-b3d2-589e-9d20-edeb45f2b2bc"
+version = "1.6.9+4"
+
+[[Xorg_libXau_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "4e490d5c960c314f33885790ed410ff3a94ce67e"
+uuid = "0c0b7dd1-d40b-584c-a123-a41640f87eec"
+version = "1.0.9+4"
+
+[[Xorg_libXcursor_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXfixes_jll", "Xorg_libXrender_jll"]
+git-tree-sha1 = "12e0eb3bc634fa2080c1c37fccf56f7c22989afd"
+uuid = "935fb764-8cf2-53bf-bb30-45bb1f8bf724"
+version = "1.2.0+4"
+
+[[Xorg_libXdmcp_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "4fe47bd2247248125c428978740e18a681372dd4"
+uuid = "a3789734-cfe1-5b06-b2d0-1dd0d9d62d05"
+version = "1.1.3+4"
+
+[[Xorg_libXext_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll"]
+git-tree-sha1 = "b7c0aa8c376b31e4852b360222848637f481f8c3"
+uuid = "1082639a-0dae-5f34-9b06-72781eeb8cb3"
+version = "1.3.4+4"
+
+[[Xorg_libXfixes_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll"]
+git-tree-sha1 = "0e0dc7431e7a0587559f9294aeec269471c991a4"
+uuid = "d091e8ba-531a-589c-9de9-94069b037ed8"
+version = "5.0.3+4"
+
+[[Xorg_libXi_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXext_jll", "Xorg_libXfixes_jll"]
+git-tree-sha1 = "89b52bc2160aadc84d707093930ef0bffa641246"
+uuid = "a51aa0fd-4e3c-5386-b890-e753decda492"
+version = "1.7.10+4"
+
+[[Xorg_libXinerama_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXext_jll"]
+git-tree-sha1 = "26be8b1c342929259317d8b9f7b53bf2bb73b123"
+uuid = "d1454406-59df-5ea1-beac-c340f2130bc3"
+version = "1.1.4+4"
+
+[[Xorg_libXrandr_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll"]
+git-tree-sha1 = "34cea83cb726fb58f325887bf0612c6b3fb17631"
+uuid = "ec84b674-ba8e-5d96-8ba1-2a689ba10484"
+version = "1.5.2+4"
+
+[[Xorg_libXrender_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll"]
+git-tree-sha1 = "19560f30fd49f4d4efbe7002a1037f8c43d43b96"
+uuid = "ea2f1a96-1ddc-540d-b46f-429655e07cfa"
+version = "0.9.10+4"
+
+[[Xorg_libpthread_stubs_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "6783737e45d3c59a4a4c4091f5f88cdcf0908cbb"
+uuid = "14d82f49-176c-5ed1-bb49-ad3f5cbd8c74"
+version = "0.1.0+3"
+
+[[Xorg_libxcb_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "XSLT_jll", "Xorg_libXau_jll", "Xorg_libXdmcp_jll", "Xorg_libpthread_stubs_jll"]
+git-tree-sha1 = "daf17f441228e7a3833846cd048892861cff16d6"
+uuid = "c7cfdc94-dc32-55de-ac96-5a1b8d977c5b"
+version = "1.13.0+3"
+
+[[Xorg_libxkbfile_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll"]
+git-tree-sha1 = "926af861744212db0eb001d9e40b5d16292080b2"
+uuid = "cc61e674-0454-545c-8b26-ed2c68acab7a"
+version = "1.1.0+4"
+
+[[Xorg_xcb_util_image_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_xcb_util_jll"]
+git-tree-sha1 = "0fab0a40349ba1cba2c1da699243396ff8e94b97"
+uuid = "12413925-8142-5f55-bb0e-6d7ca50bb09b"
+version = "0.4.0+1"
+
+[[Xorg_xcb_util_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libxcb_jll"]
+git-tree-sha1 = "e7fd7b2881fa2eaa72717420894d3938177862d1"
+uuid = "2def613f-5ad1-5310-b15b-b15d46f528f5"
+version = "0.4.0+1"
+
+[[Xorg_xcb_util_keysyms_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_xcb_util_jll"]
+git-tree-sha1 = "d1151e2c45a544f32441a567d1690e701ec89b00"
+uuid = "975044d2-76e6-5fbe-bf08-97ce7c6574c7"
+version = "0.4.0+1"
+
+[[Xorg_xcb_util_renderutil_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_xcb_util_jll"]
+git-tree-sha1 = "dfd7a8f38d4613b6a575253b3174dd991ca6183e"
+uuid = "0d47668e-0667-5a69-a72c-f761630bfb7e"
+version = "0.3.9+1"
+
+[[Xorg_xcb_util_wm_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_xcb_util_jll"]
+git-tree-sha1 = "e78d10aab01a4a154142c5006ed44fd9e8e31b67"
+uuid = "c22f9ab0-d5fe-5066-847c-f4bb1cd4e361"
+version = "0.4.1+1"
+
+[[Xorg_xkbcomp_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libxkbfile_jll"]
+git-tree-sha1 = "4bcbf660f6c2e714f87e960a171b119d06ee163b"
+uuid = "35661453-b289-5fab-8a00-3d9160c6a3a4"
+version = "1.4.2+4"
+
+[[Xorg_xkeyboard_config_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_xkbcomp_jll"]
+git-tree-sha1 = "5c8424f8a67c3f2209646d4425f3d415fee5931d"
+uuid = "33bec58e-1273-512f-9401-5d533626f822"
+version = "2.27.0+4"
+
+[[Xorg_xtrans_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "79c31e7844f6ecf779705fbc12146eb190b7d845"
+uuid = "c5fb5394-a638-5e4d-96e5-b29de1b5cf10"
+version = "1.4.0+3"
 
 [[Wayland_jll]]
 deps = ["Artifacts", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
@@ -979,17 +1232,24 @@ version = "0.9.1+5"
 # ╔═╡ Cell order:
 # ╠═f7ca7fbc-0fac-11ec-1b01-77c4fb485ee6
 # ╟─4383f1a5-eff1-425c-ae9a-e377ca0cabc8
-# ╠═581f09f4-cc21-48d2-9d58-d67dc22a915d
+# ╟─581f09f4-cc21-48d2-9d58-d67dc22a915d
 # ╟─77db5a78-6cd3-46fc-ba31-858a5bd2b60c
-# ╠═03f9c08e-b31c-4d24-b45e-ddf400294221
+# ╟─03f9c08e-b31c-4d24-b45e-ddf400294221
 # ╠═92032536-4310-4d11-8923-7c2947296c79
-# ╠═9849b047-2eba-4740-a462-d52337b24700
-# ╠═dd2de897-4bdd-4794-b295-80b5ade34be1
-# ╠═1a1324dd-5674-4608-867e-a4ae2d2d3c77
-# ╠═996458de-f0fa-49bd-865e-7017d91c7197
 # ╠═b0015647-4a60-4689-95bd-271050c2ddee
 # ╠═0679b201-2fb7-41c7-b619-54f8cee67b55
 # ╠═e9419743-d6a2-418f-9012-813398aebbbd
 # ╠═a43f1785-18fd-4418-a494-7d368d1265ca
+# ╠═be58676d-ad76-4fe5-aef6-67badf767347
+# ╠═ecf57eb9-dc15-47e7-a683-20d37f33d5d0
+# ╟─9559961f-8348-44db-ac46-203bca8ad847
+# ╠═84b54f02-936a-4454-a7b9-60607a9b9bec
+# ╠═ce5766fe-cf1f-4507-a5a1-2e090e5b39ff
+# ╠═eb515fa9-9be9-4b8b-a944-b367bb310254
+# ╠═71435c12-8940-439d-9e60-d3626383d9cf
+# ╠═bbbe9638-a824-478c-aa1e-e5fd43102f07
+# ╠═24338d39-0804-4c59-9758-d29af5db14e5
+# ╠═1eb4e4cb-5a14-4c25-b3ec-6dea5cd9ce21
+# ╠═b77f53aa-d7e9-4c40-a0cb-74140d7b37f3
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
