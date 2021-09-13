@@ -1,10 +1,10 @@
 using CSV
 using DataFrames
-# using Plots#; pyplot()
-using GLMakie
+using Plots; pyplot()
+# using GLMakie
 
 # read in the data
-Dat = CSV.File("/Users/aran/Documents/GitHub/PosVol/D++.txt",delim = '\t') |> DataFrame;
+Dat = CSV.File("D++.txt",delim = '\t') |> DataFrame;
 rename!(Dat,[:Depth,:Pitch,:Roll,:Speed,:Heading]);
 #Dat = Dat[1:(sum(ismissing.(Dat.Depth) .== false) - 1),:]
 
@@ -36,7 +36,7 @@ y = [sinpi(φ)*sinpi(ϕ) for ϕ in ϕ, φ in φ]
 z = sqrt.(x.^2 + y.^2)
 surface(x, y, z, shading = false)
 
-plot(z)
+plot(x,y,z,st=:surface,c=cgrad([:black,:grey]))
 
 tan(θ/2) = r/d
 
@@ -62,3 +62,15 @@ x = [d*tan(ϕ) for ϕ in ϕ]
 y = [d*tan(ψ) for ψ in ψ]
 z = sqrt.(x.^2 + y.^2)
 surface(x, y, z, shading = false)
+
+n = 100
+u = LinRange(0,2*π,n);
+v = LinRange(0,π,n);
+
+x = [cos(u) * sin(v) for u in u, v in v]
+# y = sin(u) * sin(v)';
+y = [sin(u) * sin(v) for u in u, v in v]
+z = sqrt.(x.^2 + y.^2);
+
+# The rstride and cstride arguments default to 10
+plot(x,y,z, st = :surface,camera = (-50,30))
