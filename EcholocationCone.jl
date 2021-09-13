@@ -1,7 +1,7 @@
 using CSV
 using DataFrames
-using Plots#; pyplot()
-# using GLMakie
+# using Plots#; pyplot()
+using GLMakie
 
 # read in the data
 Dat = CSV.File("/Users/aran/Documents/GitHub/PosVol/D++.txt",delim = '\t') |> DataFrame;
