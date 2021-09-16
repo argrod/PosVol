@@ -6,58 +6,118 @@ date : 10th September 2021
 
 # Calculating the volume of echolocation signals
 
-Movement data from the tags are speed, pitch, roll, and heading. The inter-click interval is also available. From this, the volume of 'searchable range' can be calculated.
+Movement data from the tags are speed, pitch, roll, and heading. The inter-click interval is also available. From this, the volume of 'searchable range' can be calculated, given a few assumptions.
 
 ```julia;echo=false
     using CSV
     using Weave
     using DataFrames
-    using Plots
+    using Plots#; pyplot()
+    using LaTeXStrings
     # read in the data
-    Dat = CSV.File("/Users/aran/Documents/GitHub/PosVol/D++.txt",delim = '\t') |> DataFrame;
+    Dat = CSV.File("D++.txt",delim = '\t') |> DataFrame;
     rename!(Dat,[:Depth,:Pitch,:Roll,:Speed,:Heading]);
     #Dat = Dat[1:(sum(ismissing.(Dat.Depth) .== false) - 1),:]
 
-    new = Dat[:,2:3]
-    new = new[1:16:nrow(Dat),:]
-    new = new[1:sum(ismissing.(Dat.Heading) .== false),:]
-    dat = DataFrame(Depth = Dat.Depth[1:sum(ismissing.(Dat.Heading) .== false)], Pitch = new[:,1], Roll = new[:,2], Speed = Dat.Speed[1:sum(ismissing.(Dat.Heading) .== false)], Head = Dat.Heading[sum(ismissing.(Dat.Heading) .== false)])
+    new = Dat[:,2:3];
+    new = new[1:16:nrow(Dat),:];
+    new = new[1:sum(ismissing.(Dat.Heading) .== false),:];
+    dat = DataFrame(Depth = Dat.Depth[1:sum(ismissing.(Dat.Heading) .== false)], Pitch = new[:,1], Roll = new[:,2], Speed = Dat.Speed[1:sum(ismissing.(Dat.Heading) .== false)], Head = Dat.Heading[sum(ismissing.(Dat.Heading) .== false)]);
 ```
 
 ## Calculating the cone volume for echolocation
 
-Assuming speed of sound ($$s_s$$) to be 1500 m/s and with and inter-click interval $$ci$$, the maximum distance sound can reach and return to the whale ($$d$$) can be determined by $$d = s_s \times \frac{ci}{2}$$ then can then be converted into a cone via the equation
+Assuming speed of sound ($s_s$) to be 1500 m/s and with and inter-click interval $ci$, the maximum distance sound can reach and return to the whale ($d$) can be determined by $$d = s_s \times \frac{ci}{2}$$ 
 
-$$V_c = \frac{b_a \times d}{3}$$
+An additional time penalty for 'processing time' can be added that would simply subtract from $ci$.
+
+Now we have the maximum distance reachable, we can calculate the volume. This is assumed to be a section of a sphere, with angular width $\theta$. This volume can be calculated using the equation 
+
+$$\frac{2}{3}\pi d^2h$$
+where $h = (d - d \left(cos{\left(\frac{\theta}{2}\right)} \right)$
 
 ```julia;echo=false
-    function maxEchD(ci)
-        1500*(ci/2)
-    end
-    function sphSecVol(R,d,θ)
-        (2/3)*pi*R^2*(d - d*cos(θ))
-    end
-    function ellAr(x,y)
-        pi*x*y
-    end
+    function maxEchD(ci);
+        1500*(ci/2);
+    end;
+    function sphSecVol(d,θ);
+        (2/3)*pi*d^2*(d - d*cos(θ/2));
+    end;
 ```
 
-where $b_a$ is the base area. This base area is dependent on the angle of spread of the echolocation signal. Assuming the sound originates from a single point, the sound is assumed to spread via angle $$\theta$$ in all directions (adjustments can be made if this specification needs changing). The radius of the resulting circle at the max distance $d$ is equal to 
+This assumes the sound is spreads via angle $\theta$ in all directions (adjustments can be made if this specification needs changing).
 
-$d \times tan(\theta)$
-
-This base area is assumed to be a circle, but with inclusion of different angles, could form an ellipse with area $\pi a b$, where $a$ and $b$ are the major and minor radii, respectively.
+So, given a typical sperm whale $ci$ of $0.05$s and an angular spread of $45$° (i.e. $22.5$° either side of the origin), the maximum distance would be $37.5$m. Plotting this in 2D space shows the following 
 
 ```julia; echo = false
     d = maxEchD(0.05)
+    θ = 45/(180/pi)*0.5
 
-    plot([0,0, d*(sin(2.5/(180/pi)))],[0,d,  d*(cos(2.5/(180/pi)))],legend=false)
-    plot!([0,d*(sin(2.5/(180/pi)))],[0,d*(cos(2.5/(180/pi)))],legend=false)
-    annotate!(.05,d/2,Plots.text("d"))
+    f(x,d) = sqrt(real(d^2 - x^2))
+
+    plot([-d*(sin(θ)),0, d*(sin(θ))],[d*cos(θ), 0, d*(cos(θ))],legend=false)
+    plot!([0,0],[0,d])
+    annotate!(-.5,d/2,Plots.text(L"d"))
+    plot!(LinRange(-d*(sin(θ)), d*(sin(θ)),1000),
+        f.(LinRange(-d*(sin(θ)), d*(sin(θ)),1000), d))
+    plot!(LinRange(0,5*sin(θ),500),f.(LinRange(0,5*sin(θ),500),5))
+    annotate!(1.2,5.7,Plots.text(L"\alpha"))
 ```
+where $\alpha$ is equal to $\theta/2$
 
-So, given a typical sperm whale $$ci$$ of $$0.05s$$ and an angular spread of $$5$$ degrees, the maximum distance would be $$37.5$$m, giving a cone volume of meters$$^2$$.
-The polygon of an echolocation signal should be a segment of a sphere, or a cone with a rounded top surface. Calculation of this volume can
+Projecting this onto a 3D plane generates the following
 
+```julia; echo=false
+l = @layout [a b]
+    
+    p1 = plot([-d*(sin(θ)),0, d*(sin(θ))],[0,0,0],[d*cos(θ), 0, d*(cos(θ))],legend=false, camera = (50, 5),linecolor=:blue);
+    plot!(LinRange(-d*(sin(θ)), d*(sin(θ)),1000), zeros(1000),
+        f.(LinRange(-d*(sin(θ)), d*(sin(θ)),1000), d), linecolor=:blue);
+    plot!([0,0,0],[-d*(sin(θ)),0, d*(sin(θ))],[d*cos(θ), 0, d*(cos(θ))],legend=false,linecolor=:purple);
+    plot!(zeros(1000),LinRange(-d*(sin(θ)), d*(sin(θ)),1000),
+        f.(LinRange(-d*(sin(θ)), d*(sin(θ)),1000), d),linecolor=:purple);
+    plot!(d*sin(θ).*cos.(0:pi/100:2*pi),d*sin(θ).*sin.(0:pi/100:2*pi),fill(d*cos(θ),length(0:pi/100:2*pi)));
 
+    p2 = plot([-d*(sin(θ)),0, d*(sin(θ))],[0,0,0],[d*cos(θ), 0, d*(cos(θ))],legend=false, camera = (50, 30),linecolor=:blue);
+    plot!(LinRange(-d*(sin(θ)), d*(sin(θ)),1000), zeros(1000),
+        f.(LinRange(-d*(sin(θ)), d*(sin(θ)),1000), d), linecolor=:blue,layout=l);
+    plot!([0,0,0],[-d*(sin(θ)),0, d*(sin(θ))],[d*cos(θ), 0, d*(cos(θ))],legend=false,linecolor=:purple);
+    plot!(zeros(1000),LinRange(-d*(sin(θ)), d*(sin(θ)),1000),
+        f.(LinRange(-d*(sin(θ)), d*(sin(θ)),1000), d),linecolor=:purple);
+    plot!(d*sin(θ).*cos.(0:pi/100:2*pi),d*sin(θ).*sin.(0:pi/100:2*pi),fill(d*cos(θ),length(0:pi/100:2*pi)));
 
+display(plot(p1,p2,layout=l))
+```
+and a volume of 2122.2 m$^3$. NOW CALCULATED VOLUME AS WHALE MOVES FORWARD WITH PITCH AND ROLL CHANGES.
+
+```julia;echo=false
+#convert to Rad
+dat.rPitch = dat.Pitch*(pi/180)
+dat.rRoll = dat.Roll*(pi/180)
+dat.rHead = dat.Head*(pi/180)
+#z = LinRange(1,d,1000)
+#x = z.*cos(θ)
+#y = z.*sin(θ)
+#
+#SphConY(z,θ) = [z, z*cos(θ), z*sin(θ)]
+#
+#plot(x,y,z,seriestype=:scatter)
+#plot!(x,-y,z,seriestype=:scatter)
+#plot!(-x,y,z,seriestype=:scatter)
+#plot!(-x,-y,z,seriestype=:scatter)
+#
+#
+#plot(0,0,0,seriestype=:scatter)
+#for b in z
+#r = b*cos(θ)
+#Plots.display(plot!(r.*cos.(0:pi/100:2*pi), r.*sin.(0:pi/#100:2*pi),fill(r,length(0:pi/100:2*pi)),seriestype=:scatter,#legend=false))
+#end
+#
+#ϕ = LinRange(0, d, 100)
+#φ = LinRange(0, d, 100)
+#x = [cos(φ)*sin(ϕ) for ϕ in ϕ, φ in φ]
+#y = [sin(φ)*sin(ϕ) for ϕ in ϕ, φ in φ]
+#z = sqrt.(x.^2 + y.^2)
+#surface(x, y, z, shading = false)
+#length(\phi)
+```
