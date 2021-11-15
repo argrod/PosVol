@@ -1,0 +1,99 @@
+```julia;echo=false
+    using Weave
+    # using Makie
+	using CairoMakie
+	# using GLMakie
+	using CSV
+	using DataFrames
+	# using WebIO
+	using MeshIO
+	using Plots
+	using LinearAlgebra
+	using StaticArrays
+	using PlotlyJS
+	# using PyPlot
+	# using PyCall
+	#@pyimport matplotlib.animation as anim
+```
+
+# Rotation of whale echolocation
+
+We have some series of data that include the three euler angular rotations: pitch, roll, and heading (yaw). We also know the corresponding speed and depth of the animal. The goal is to estimate the volume of 'searched' region via echolocation. To do so, we must know the origin point of the echolocation signal and the direction in which the signal moves. The initial point is calculated as a vector of length speed and angles θ, ϕ, ψ or pitch, roll, yaw.
+
+The rotation of the animal is shown through the pitch (rotation around the y axis), roll (rotation around the x axis), and yaw/heading (rotation about the z axis) values. Calculation of rotation angles 
+the next point of the animal can therefore be achieved through a rotational matrix:
+
+$$\stackrel{\mbox{\textit{roll}}}{
+\begin{bmatrix}
+1 & 0 & 0 \\
+0 & cos(γ) & -sin(γ) \\
+0 & sin(γ) & cos(γ) \\
+\end{bmatrix}}
+\stackrel{\mbox{\textit{yaw}}}{
+\begin{bmatrix}
+cos(α) & sin(α) & 0 \\
+sin(α) & cos(α) & 0 \\
+0 & 0 & 1 \\
+\end{bmatrix}}
+\stackrel{\mbox{\textit{pitch}}}{
+\begin{bmatrix}
+cos(β) & 0 & sin(β) \\
+0 & 1 & 0 \\
+-sin(β) & 0 & cos(β) \\
+\end{bmatrix}}$$
+where the order of rotation determines the resultant rotational matrix. 
+
+However, in this case, we are given pitch, roll, and heading values. Therefore, calculation of the positions is made simpler by the application of simple trigonometric rules. The three axes positions can be calculated as:
+
+$$(x,y,z) = (scosθ,scosϕ,scosψ)$$
+
+```julia; echo=false
+    # read in the data
+	Dat = CSV.File("D++.txt",delim = '\t') |> DataFrame;
+	rename!(Dat,[:Depth,:Pitch,:Roll,:Speed,:Heading]);
+    new = Dat[:,2:3]
+	new = new[1:16:nrow(Dat),:]
+	new = new[1:sum(ismissing.(Dat.Heading) .== false),:]
+	dat = DataFrame(Depth = Dat.Depth[1:sum(ismissing.(Dat.Heading) .== false)], Pitch = new[:,1], Roll = new[:,2], Speed = Dat.Speed[1:sum(ismissing.(Dat.Heading) .== false)], Head = Dat.Heading[sum(ismissing.(Dat.Heading) .== false)])
+```
+
+```julia
+Plots.scatter([dat.Speed[1]*cos(dat.Pitch[1])],[dat.Speed[1]*cos(dat.Roll[1])],[dat.Speed[1]*cos(dat.Head[1])])
+pos = [dat.Speed[1]*cos(dat.Pitch[1])],[dat.Speed[1]*cos(dat.Roll[1])],[dat.Speed[1]*cos(dat.Head[1])]
+typeof(pos)
+for b = 1:nrow(dat)
+    if b == 1
+        x = [dat.Speed[b]*cos(dat.Pitch[b])]
+        y = [dat.Speed[b]*cos(dat.Roll[b])]
+        z = [dat.Speed[b]*cos(dat.Head[b])]
+        Plots.scatter(x,y,z)
+    else
+        x += [dat.Speed[b]*cos(dat.Pitch[b])]
+        y += [dat.Speed[b]*cos(dat.Roll[b])]
+        z += [dat.Speed[b]*cos(dat.Head[b])]
+        Plots.scatter!(x,y,z)
+    end
+end
+
+scatter3d(;x=accumulate(+, dat.Speed.*cos.(dat.Pitch)),y=accumulate(+, dat.Speed.*cos.(dat.Roll)),z=accumulate(+, dat.Speed.*cos.(dat.Head)))
+
+Plots.scatter(accumulate(+, dat.Speed.*cos.(dat.Pitch)),accumulate(+, dat.Speed.*cos.(dat.Roll)),accumulate(+, dat.Speed.*cos.(dat.Head)))
+
+sum(dat.Speed.*cos.(dat.Pitch))
+
+pos+[dat.Speed[b]*cos(dat.Pitch[1])],[dat.Speed[b]*cos(dat.Roll[b])],[dat.Speed[b]*cos(dat.Head[b])]
+    scatter!([dat.Speed[b]*cos(dat.Pitch[1])],[dat.Speed[b]*cos(dat.Roll[b])],[dat.Speed[b]*cos(dat.Head[b])])
+```
+
+## Echolocation volume calculation
+	
+Movement data from the tags are speed, pitch, roll, and heading. The inter-click interval is also available. From this, the volume of 'searchable range' can be calculated.	The maximum theoretical distance for the echolocation signal to reach and return to the whale for processing is half the inter-click interval by the speed of sound in water (343 m s$^{-1}$).
+
+```julia;echo=false
+	function echDist(ICI::Float64,pT::Float64=0)
+		dist = (343*ICI) - pT;
+		if dist < pT
+		throw(ArgumentError("Processing time exceeds half the ICI"))
+		end
+	end
+```
