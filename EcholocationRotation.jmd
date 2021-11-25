@@ -1,6 +1,6 @@
-```julia;echo=false
+```julia; echo=false
     using Weave
-    # using Makie
+	# using Makie
 	using CairoMakie
 	# using GLMakie
 	using CSV
@@ -75,10 +75,10 @@ for b = 1:nrow(dat)
     end
 end
 
-scatter3d(;x=accumulate(+, dat.Speed.*cos.(dat.Pitch)),y=accumulate(+, dat.Speed.*cos.(dat.Roll)),z=accumulate(+, dat.Speed.*cos.(dat.Head)))
+Plots.plot(accumulate(+, dat.Speed.*cos.(dat.Pitch)),accumulate(+, dat.Speed.*cos.(dat.Roll)),accumulate(+, dat.Speed.*cos.(dat.Head)))
 
-Plots.scatter(accumulate(+, dat.Speed.*cos.(dat.Pitch)),accumulate(+, dat.Speed.*cos.(dat.Roll)),accumulate(+, dat.Speed.*cos.(dat.Head)))
 
+Plots.plot([1,2,3])
 sum(dat.Speed.*cos.(dat.Pitch))
 
 pos+[dat.Speed[b]*cos(dat.Pitch[1])],[dat.Speed[b]*cos(dat.Roll[b])],[dat.Speed[b]*cos(dat.Head[b])]
