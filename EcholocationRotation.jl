@@ -8,7 +8,7 @@ using DataFrames
 using Plots
 using LinearAlgebra
 using StaticArrays
-# using PlotlyJS
+using PlotlyJS
 using Statistics
 using Rotations
 
@@ -27,14 +27,40 @@ function PeakTrough(x::Vector{Float64})
     end
     return Peaks, Troughs
 end
-# calculate echolocation distance 
-function echDist(ICI::Float64,pT::Float64=0.0)
+# calculate echolocation distance
+function echDist(ICI::Number,pT::Number=0)
     dist = (343*ICI) - pT;
     if dist < pT
     throw(ArgumentError("Processing time exceeds half the ICI"))
     end
+    return dist
 end
-# read in the data
+# rotations
+function yawRot(γ::Number,deg::Bool=true)
+    if deg == true
+        γ = γ*(pi/180)
+    end
+    return([[cos(γ), sin(γ), 0] [-sin(γ), cos(γ), 0] [0,0,1]])
+end
+function pitchRot(ρ::Number,deg::Bool=false)
+    if deg == true
+        ρ = ρ*(pi/180)
+    end
+    return([[cos(ρ),0,sin(ρ)] [0,1,0] [-sin(ρ),0,cos(ρ)]])
+end
+function rollRot(r::Number,deg::Bool=false)
+    if deg == true
+        r = r*(pi/180)
+    end
+    return([[1,0,0] [0,cos(r),sin(r)] [0,-sin(r),cos(r)]])
+end
+function rotMat(γ::Number,ρ::Number,r::Number,deg::Bool=true)
+    # apply rotations as yaw then pitch then roll
+    return yawRot(γ,deg)*pitchRot(ρ,deg)*rollRot(r,deg)
+end
+
+rotMat(dat.Head[1],dat.Pitch[1],dat.Roll[1])
+
 Dat = CSV.File("D++.txt",delim = '\t') |> DataFrame;
 rename!(Dat,[:Depth,:Pitch,:Roll,:Speed,:Heading]);
 
