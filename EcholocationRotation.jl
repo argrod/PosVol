@@ -59,25 +59,23 @@ function rotMat(γ::Number,ρ::Number,r::Number,deg::Bool=true)
     return yawRot(γ,deg)*pitchRot(ρ,deg)*rollRot(r,deg)
 end
 
-rotMat(dat.Head[1],dat.Pitch[1],dat.Roll[1])
-
 Dat = CSV.File("D++.txt",delim = '\t') |> DataFrame;
 rename!(Dat,[:Depth,:Pitch,:Roll,:Speed,:Heading]);
 
 
+Dat[1,:]
 
-
-dat = DataFrame(Depth = Dat.Depth[1:findlast(Dat.Heading.!== missing)], Pitch = Dat.Pitch[1:16:(findlast(Dat.Heading.!== missing)*16)],
-    Roll = Dat.Roll[1:16:(findlast(Dat.Heading.!== missing)*16)],Speed = Dat.Speed[1:findlast(Dat.Heading.!== missing)], Head = Dat.Heading[1:findlast(Dat.Heading.!== missing)])
-if any(ismissing.(dat.Depth))
-    for x = findall(ismissing.(dat.Depth))
-        findlast(dat.Depth[1:x])
-    end
-elseif any(ismissing.(dat.Speed))
-    for x = findall(ismissing.(dat.Speed))
-        dat.Speed[x] = sum(skipmissing(dat.Speed[(findlast(ismissing.(dat.Speed[1:x])) - 1):(findfirst(ismissing.(Dat.Speed[x:end]) .== 0)+x-1)]))/((findfirst(ismissing.(Dat.Speed[x:end]) .== 0)+x-1)-(findlast(ismissing.(dat.Speed[1:x])) - 1))
-    end
-end
+dat = DataFrame(Depth = Dat.Depth[1:findlast(Dat.Speed.!== missing)], Pitch = Dat.Pitch[1:16:(findlast(Dat.Speed.!== missing)*16)],
+    Roll = Dat.Roll[1:16:(findlast(Dat.Speed.!== missing)*16)],Speed = Dat.Speed[1:findlast(Dat.Speed.!== missing)], Head = Dat.Heading[1:findlast(Dat.Speed.!== missing)])
+# if any(ismissing.(dat.Depth))
+#     for x = findall(ismissing.(dat.Depth))
+#         findlast(dat.Depth[1:x])
+#     end
+# elseif any(ismissing.(dat.Speed))
+#     for x = findall(ismissing.(dat.Speed))
+#         dat.Speed[x] = sum(skipmissing(dat.Speed[(findlast(ismissing.(dat.Speed[1:x]) .== 0)):(findfirst(ismissing.(Dat.Speed[x:end]) .== 0)+x-1)]))/((findfirst(ismissing.(Dat.Speed[x:end]) .== 0)+x-1)-(findlast(ismissing.(dat.Speed[1:x])) - 1))
+#     end
+# end
 # new = Dat[:,2:3]
 # new = new[1:16:nrow(Dat),:]
 # new = new[1:sum(ismissing.(Dat.Heading) .== false),:]
@@ -110,10 +108,11 @@ Plots.plot!(dat.Pitch,mirror=true,ylims=(minimum(dat.Pitch),maximum(dat.Pitch)))
 
 dat.Speed.*sind.(dat.Head)
 
+datLim = dat[ismissing.(dat.Head) .== 0,:]
 # horizontal speed
-σ = dat.Speed.*cosd.(abs.(dat.Pitch));
+σ = identity.(datLim.Speed.*cosd.(abs.(datLim.Pitch)));
 
-Plots.scatter(σ.*sind.(dat.Head),σ*cosd.(dat.Head))
+Plots.scatter(σ.*sind.(datLim.Head),σ.*cosd.(datLim.Head))
 
 cosd(360-dat.Head[1])
 
