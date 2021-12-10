@@ -112,7 +112,10 @@ datLim = dat[ismissing.(dat.Head) .== 0,:]
 # horizontal speed
 σ = identity.(datLim.Speed.*cosd.(abs.(datLim.Pitch)));
 
-Plots.scatter(σ.*sind.(datLim.Head),σ.*cosd.(datLim.Head))
+Plots.plot(σ.*sind.(datLim.Head),σ.*cosd.(datLim.Head))
+
+Plots.plot(datLim.Depth,σ.*sind.(datLim.Head),σ.*cosd.(datLim.Head))
+
 
 cosd(360-dat.Head[1])
 
