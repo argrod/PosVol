@@ -1,6 +1,6 @@
 using CSV
 using DataFrames
-using Plots; pyplot()
+using Plots;
 # using GLMakie
 
 # read in the data
@@ -17,12 +17,22 @@ dat = DataFrame(Depth = Dat.Depth[1:sum(ismissing.(Dat.Heading) .== false)], Pit
 function maxEchD(ci)
     1500*(ci/2)
 end
+function echDist(ICI::Number,pT::Number=0)
+    dist = (343*ICI) - pT;
+    if dist < pT
+    throw(ArgumentError("Processing time exceeds half the ICI"))
+    end
+    return dist
+end
 function sphSecVol(d,θ)
     (2/3)*pi*d^2*(d - d*cos(θ/2))
 end
 function ellAr(x,y)
     pi*x*y
 end
+function coneCoords(x,y,z,pitch,head,θ=15)
+    
+end 
 
 d = maxEchD(0.05)
 θ = 5/(180/pi)
@@ -37,13 +47,127 @@ surface(x, y, z, shading = false)
 
 plot(x,y,z,st=:surface,c=cgrad([:black,:grey]))
 
-tan(θ/2) = r/d
+function xcoord(ρ,θ,ϕ,inDegs=true)
+    return inDegs == true ? ρ*cos(θ*(π/180))*cos(ϕ*(π/180)) : ρ*cos(θ)*cos(ϕ)
+end
+function ycoord(ρ,θ,ϕ,inDegs=true)
+    return inDegs == true ? ρ*sin(θ*(π/180))*sin(ϕ*(π/180)) : ρ*sin(θ)*sin(ϕ)
+end
+function zcoord(ρ,ϕ,inDegs=true)
+    return inDegs == true ? ρ*cos(ϕ*(π/180)) : ρ*cos(ϕ)
+end
+
+n = 100
+u = range(-π, π; length = n)
+v = range(0, 15*(π/180); length = n)
+x = cos.(u) * sin.(v)'
+y = sin.(u) * sin.(v)'
+z = ones(n) * cos.(v)'
+
+Plots.surface(5.*x,5.*y,5.*z)
+
+n = 200
+θ = range(-π, π; length = n)
+φ = [(0:2n-2)*2/(2n-1);2]
+x = [cospi(φ)*sinpi(θ) for θ in θ, φ in φ]
+y = [sinpi(φ)*sinpi(θ) for θ in θ, φ in φ]
+z = @. sqrt(x^2 + y^2)
+surface(x, y, z, xlims=(-2,2),ylims=(-2,2),zlims=(-2,2))
+
+
+n = 200
+θ = LinRange(0, 0.5, 100)
+φ = LinRange(0, 2, 100)
+x = [cospi(φ)*sinpi(θ) for θ in θ, φ in φ]
+y = [sinpi(φ)*sinpi(θ) for θ in θ, φ in φ]
+z = sqrt.(x.^2 + y.^2)
+surface(x, y, z, shading = false)
+
+plot(x.+1,y,z,seriestype=:scatter)
+
+x[1,:]
+y[1,:]
+z[1,:]
+z[2,:]
+
+datLim = dat[ismissing.(dat.Head) .== 0,:]
+# horizontal speed
+σ = identity.(datLim.Speed.*cosd.(abs.(datLim.Pitch)));
+Plots.plot!(σ.*sind.(datLim.Head),σ.*cosd.(datLim.Head),.-datLim.Depth,color="blue")
+
+
+Plots.plot([σ[499]*sind(datLim.Head[499]),σ[500]*sind(datLim.Head[500])],
+    [σ[499]*cosd(datLim.Head[499]),σ[500]*cosd(datLim.Head[500])],
+    [-datLim.Depth[499],-datLim.Depth[500]],color="blue")
+Plots.plot!([σ[500]*sind(datLim.Head[500])],[σ[500]*cosd(datLim.Head[500])],[-datLim.Depth[500]],color="blue",seriestype=:scatter,markersize =3)
+θ = LinRange(σ[499]*sind(datLim.Head[499]), σ[500]*sind(datLim.Head[500]), 100)
+φ = LinRange(σ[499]*cosd(datLim.Head[499]), σ[500]*cosd(datLim.Head[500]), 100)
+x = [cospi(φ)*sinpi(θ) for θ in θ, φ in φ]
+y = [sinpi(φ)*sinpi(θ) for θ in θ, φ in φ]
+z = sqrt.(x.^2 + y.^2)
+surface(x,y,z,xlims=(minimum(x),maximum(x)),ylims=(minimum(y),maximum(y)),zlims=(minimum(z),maximum(z)))
+
+
+Plots.plot([0],[0],[0],seriestype=:scatter,xlims=(-5,5),
+    ylims=(-5,5),zlims=(-5,5))
+
+Plots.plot!([5],[5],[5],seriestype=:scatter)
+
+    Plots.plot!([xcoord.(5,0:360,5)],[ycoord.(5,0:360,5)],[repeat([zcoord(5,5)],360)],
+    seriestype=:scatter)
+
+repeat([0],360)
+
+Plots.scatter([σ[500]*sind(datLim.Head[500])],[σ[500]*cosd.(datLim.Head[500])],[-datLim.Depth[500]])
+Plots.scatter!([σ[500]*sind(datLim.Head[500])+echDist(1)*sind(datLim.Head[500]+15)],
+    [σ[500]*cosd(datLim.Head[500])+echDist(1)*cosd(datLim.Head[500]+15)])
+
+
+    [σ[500]*sind(datLim.Head[500]).+echDist(1).*sind.(datLim.Head[500] .+ [-15,15])]
+    [σ[500]*cosd(datLim.Head[500]).+echDist(1).*cosd.(datLim.Head[500] .+ [-15,15])]
+    [-datLim.Depth[500].+echDist(1).*[cosd(datLim.Pitch[500])]]
+
+newPitch = x .+ r.*[cosd(pitch+15)])
+
+Plots.plot(σ.*sind.(datLim.Head),σ.*cosd.(datLim.Head),.-datLim.Depth,color="blue")
+
+Plots.pyplot()
+
+plotlyjs()
+Plots.plot([0],[0],[0],seriestype=:scatter,xlims=(-5,5),
+    ylims=(-5,5),zlims=(-5,5))
+Plots.plot!([3*cosd(15)],[3*cosd(15)],[3*cosd(15)],seriestype=:scatter)
+Plots.plot!([3*sind(15)],[3*sind(15)],[3*sind(15)],seriestype=:scatter)
+
+scatter([5*cosd.([15/2,-15/2])],[5*sind.([15/2,-15/2])],[5*cosd.([15/2,-15/2])])
+
+plot([0],[0],seriestype=:scatter,xlims=(-5,5),ylims=(-5,5))
+Plots.plot!([3*cosd(15)],[3*cosd(15)],seriestype=:scatter)
+Plots.plot!([3*cosd(10)],[3*cosd(10)],seriestype=:scatter)
+
+Plots.plot!([3*sind(-15)],[3*sind(-15)],seriestype=:scatter)
+
+
+
+Plots.plot([0],[0],seriestype=:scatter,xlims=(-5,5),ylims=(-5,5))
 
 
 xs = LinRange(-d/2, d/2, 100)
 ys = LinRange()
 
 f(x,y) = (x)^2 + (y)^2
+
+datLim = dat[ismissing.(dat.Head) .== 0,:]
+# horizontal speed
+σ = identity.(datLim.Speed.*cosd.(abs.(datLim.Pitch)));
+
+
+Plots.scatter([σ.*sind.(datLim.Head)],[-datLim.Depth],[σ.*cosd.(datLim.Head)],markersize=3,color="red",xlims=(minimum(σ.*sind.(datLim.Head)),maximum(σ.*sind.(datLim.Head))),
+zlims=(minimum(σ.*cosd.(datLim.Head)),maximum(σ.*cosd.(datLim.Head))),ylims=(minimum(-datLim.Depth),0))
+
+Plots.pyplot()
+Plots.scatter([σ.*sind.(datLim.Head)],-datLim.Depth,[σ.*cosd.(datLim.Head)])
+
 
 x = LinRange(-d,d,100)
 y = x
