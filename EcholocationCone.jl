@@ -57,6 +57,17 @@ function zcoord(ρ,ϕ,inDegs=true)
     return inDegs == true ? ρ*cos(ϕ*(π/180)) : ρ*cos(ϕ)
 end
 
+# set θ as 0 : 2π
+# ϕ determined as angle cone makes with z axis
+# rotating a cone so there is one axis of symmetry (only need rotation about the z and y axes)
+θ = LinRange(0,2*π, 100)
+ϕ = LinRange(0, 15*(180/pi), 100)
+surface(xcoord.(3,θ,ϕ,false),ycoord.(3,θ,ϕ,false),
+    zcoord.(3,ϕ,false))
+
+xcoord(3,1.5,.15,false)
+
+
 n = 100
 u = range(-π, π; length = n)
 v = range(0, 15*(π/180); length = n)
@@ -95,7 +106,6 @@ datLim = dat[ismissing.(dat.Head) .== 0,:]
 σ = identity.(datLim.Speed.*cosd.(abs.(datLim.Pitch)));
 Plots.plot!(σ.*sind.(datLim.Head),σ.*cosd.(datLim.Head),.-datLim.Depth,color="blue")
 
-
 Plots.plot([σ[499]*sind(datLim.Head[499]),σ[500]*sind(datLim.Head[500])],
     [σ[499]*cosd(datLim.Head[499]),σ[500]*cosd(datLim.Head[500])],
     [-datLim.Depth[499],-datLim.Depth[500]],color="blue")
@@ -107,6 +117,38 @@ y = [sinpi(φ)*sinpi(θ) for θ in θ, φ in φ]
 z = sqrt.(x.^2 + y.^2)
 surface(x,y,z,xlims=(minimum(x),maximum(x)),ylims=(minimum(y),maximum(y)),zlims=(minimum(z),maximum(z)))
 
+# calculate the x and y positions of whale (z axis as depth)
+datLim.y = cumsum(σ.*cosd.(datLim.Head))
+datLim.x = cumsum(σ.*sind.(datLim.Head))
+
+plot([datLim.x],[datLim.y],[.-datLim.Depth],xlabel="X",ylabel="Y",zlabel="Depth")
+
+anim = @animate for g = 1:nrow(datLim)
+    Plots.scatter([datLim.x[g]],[datLim.y[g]],[-datLim.Depth[g]],markersize=3,color="red",xlims=(minimum(datLim.x),maximum(datLim.x)),
+    ylims=(minimum(datLim.y),maximum(datLim.y)),zlims=(minimum(-datLim.Depth),0))
+    if g > 1
+        Plots.plot!(datLim.x[1:g],datLim.y[1:g],.-datLim.Depth[1:g],color="blue")
+    end
+end
+
+g = 1100
+Plots.scatter([datLim.x[g]],[datLim.y[g]],[-datLim.Depth[g]],markersize=3,color="red",xlims=(minimum(datLim.x),maximum(datLim.x)),
+    ylims=(minimum(datLim.y),maximum(datLim.y)),zlims=(minimum(-datLim.Depth),0))
+plot!(
+    [datLim.x[g],echDist(1)*sind(datLim.Head[g])],
+    [datLim.y[g],echDist(1)*cosd(datLim.Head[g])],
+    [-datLim.Depth[g],echDist(1)*cosd(datLim.Pitch[g])],
+    arrow=true,linewidth=2
+)
+
+
+Plots.plot([σ.*sind.(datLim.Head)],[σ.*cosd.(datLim.Head)],[.-datLim.Depth],
+    color="blue",xlabel="X",ylabel="Y",zlabel="Depth")
+
+
+g = 500
+Plots.scatter([σ[g]*sind(datLim.Head[g])],[σ[g]*cosd(datLim.Head[g])],[-datLim.Depth[g]],markersize=3,color="red",xlims=(minimum(σ.*sind.(datLim.Head)),maximum(σ.*sind.(datLim.Head))),
+    ylims=(minimum(σ.*cosd.(datLim.Head)),maximum(σ.*cosd.(datLim.Head))),zlims=(minimum(-datLim.Depth),0),xlabel="X",ylabel="Y",zlabel="Depth")
 
 Plots.plot([0],[0],[0],seriestype=:scatter,xlims=(-5,5),
     ylims=(-5,5),zlims=(-5,5))
