@@ -85,18 +85,53 @@ datLim = dat[ismissing.(dat.Head) .== 0,:]
 # horizontal speed
 σ = identity.(datLim.Speed.*cosd.(abs.(datLim.Pitch)));
 
+datLim.σ = σ
+datLim.x = cumsum(σ.*cosd.(datLim.Head))
+datLim.y = cumsum(σ.*sind.(datLim.Head))
+
+g = 1500
+
+
+
+plot([datLim.x[g]],[datLim.y[g]],-[datLim.Depth[g]],
+    xlabel="X",ylabel="Y",zlabel="Depth",
+    seriestype=:scatter,label="Whale position",legend=:top)
+plot!([datLim.x[1:g]],[datLim.y[1:g]],-[datLim.Depth[1:g]],label="Whale track")
+plot!([datLim.x[g],datLim.x[g]-echDist(1)*cosd(datLim.Head[g])],
+    [datLim.y[g],datLim.y[g] + echDist(1)*sind(datLim.Head[g])],
+    -[datLim.Depth[g],datLim.Depth[g]+echDist(1)*cosd(datLim.Pitch[g])],
+    arrow=true,color="black",label="Echolocation direction",linewidth=2)
+
+anim = @animate for g = 1:500
+    plot([datLim.x[g]],[datLim.y[g]],-[datLim.Depth[g]],
+        xlabel="X",ylabel="Y",zlabel="Depth",
+        seriestype=:scatter,label="Whale position",legend=:top,
+        xlims=(minimum(datLim.x),maximum(datLim.x)),ylims=(minimum(datLim.y),maximum(datLim.y)),
+        zlims=(-maximum(datLim.Depth)-100,0))
+    plot!([datLim.x[1:g]],[datLim.y[1:g]],-[datLim.Depth[1:g]],label="Whale track")
+    plot!([datLim.x[g],datLim.x[g]-echDist(1)*cosd(datLim.Head[g])],
+        [datLim.y[g],datLim.y[g] + echDist(1)*sind(datLim.Head[g])],
+        -[datLim.Depth[g],datLim.Depth[g]+echDist(1)*cosd(datLim.Pitch[g])],
+        arrow=true,color="black",label="Echolocation direction",linewidth=2)
+end
+gif(anim, "E:/My Drive/PhD/Figures/Visuals/whale_anim.gif", fps = 15)
+
 Plots.plot(σ.*sind.(datLim.Head),σ.*cosd.(datLim.Head),.-datLim.Depth)
 Plots.scatter!(-datLim.Depth[1],σ[1]*sind(datLim.Head[1]),σ[1]*cosd(datLim.Head[1]))
 
 anim = @animate for g = 1:length(σ)
-    Plots.scatter([σ[g]*sind(datLim.Head[g])],[σ[g]*cosd(datLim.Head[g])],[-datLim.Depth[g]],markersize=3,color="red",xlims=(minimum(σ.*sind.(datLim.Head)),maximum(σ.*sind.(datLim.Head))),
+    Plots.scatter([σ[g]*sind(datLim.Head[g])],[σ[g]*cosd(datLim.Head[g])],[-datLim.Depth[g]],
+        markersize=3,color="red",xlims=(minimum(σ.*sind.(datLim.Head)),maximum(σ.*sind.(datLim.Head))),
     ylims=(minimum(σ.*cosd.(datLim.Head)),maximum(σ.*cosd.(datLim.Head))),zlims=(minimum(-datLim.Depth),0))
     if g > 1
         Plots.plot!(σ[1:g].*sind.(datLim.Head[1:g]),σ[1:g].*cosd.(datLim.Head[1:g]),.-datLim.Depth[1:g],color="blue")
     end
 end
-gif(anim, "E:/My Drive/PhD/Figures/Visuals/whale_anim.gif", fps = 15)
+gif(anim, "/Volumes/GoogleDrive-112399531131798335686/My Drive/PhD/Figures/Visuals/whaleEcho.gif", fps = 15)
 # given some radius θ and a straight line x, calculate the corresponding boundaries of a cone
+
+
+
 
 
 datLim[1,:]
